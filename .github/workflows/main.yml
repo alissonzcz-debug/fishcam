@@ -34,6 +34,14 @@ jobs:
           cp -r vosk-tmp/vosk-model-small-pt-0.3/* app/src/main/assets/model-pt/
           rm -rf vosk-tmp vosk-model.zip
 
+      - name: Corrigir gradle.properties
+        run: |
+          echo 'org.gradle.jvmargs=-Xmx2048m' > gradle.properties
+          echo 'android.useAndroidX=true' >> gradle.properties
+          echo 'android.enableJetifier=true' >> gradle.properties
+          echo 'kotlin.code.style=official' >> gradle.properties
+          cat gradle.properties
+
       - name: Permissão Gradle
         run: chmod +x gradlew
 

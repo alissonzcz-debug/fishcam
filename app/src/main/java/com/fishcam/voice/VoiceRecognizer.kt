@@ -10,7 +10,6 @@ import kotlinx.coroutines.*
 import org.vosk.Model
 import org.vosk.Recognizer
 import org.vosk.android.StorageService
-import java.io.File
 
 class VoiceRecognizer(private val context: Context) {
 
@@ -27,44 +26,25 @@ class VoiceRecognizer(private val context: Context) {
 
     private val coroutineScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
 
-    // Callbacks
     var onStartCommandDetected: (() -> Unit)? = null
     var onStopCommandDetected: (() -> Unit)? = null
     var onModelLoaded: (() -> Unit)? = null
     var onModelLoadError: ((String) -> Unit)? = null
     var onPartialResult: ((String) -> Unit)? = null
 
-    // ── Model Loading ─────────────────────────────────────────────────────────
-
     fun loadModel() {
-        coroutineScope.launch {
-            try {
-                Log.d(TAG, "Loading Vosk model...")
-                StorageService.unpack(context, "model-pt", "model",
-                    { m ->
-                        model = m
-                        Log.d(TAG, "Vosk model loaded successfully")
-                        withContext(Dispatchers.Main) {
-                            onModelLoaded?.invoke()
-                        }
-                    },
-                    { e ->
-                        Log.e(TAG, "Model load error: $e")
-                        withContext(Dispatchers.Main) {
-                            onModelLoadError?.invoke("Erro ao carregar modelo de voz: $e")
-                        }
-                    }
-                )
-            } catch (e: Exception) {
-                Log.e(TAG, "Exception loading model", e)
-                withContext(Dispatchers.Main) {
-                    onModelLoadError?.invoke(e.message ?: "Erro desconhecido")
-                }
+        StorageService.unpack(context, "model-pt", "model",
+            { m ->
+                model = m
+                Log.d(TAG, "Vosk model loaded")
+                onModelLoaded?.invoke()
+            },
+            { e ->
+                Log.e(TAG, "Model load error: $e")
+                onModelLoadError?.invoke("Erro ao carregar modelo de voz: $e")
             }
-        }
+        )
     }
-
-    // ── Listening ─────────────────────────────────────────────────────────────
 
     fun startListening() {
         val m = model ?: run {
@@ -111,7 +91,7 @@ class VoiceRecognizer(private val context: Context) {
 
         if (rec.acceptWaveForm(buf, read)) {
             val result = rec.result.lowercase()
-            Log.d(TAG, "Full result: $result")
+            Log.d(TAG, "Result: $result")
 
             withContext(Dispatchers.Main) {
                 when {
@@ -123,11 +103,12 @@ class VoiceRecognizer(private val context: Context) {
                         Log.d(TAG, "STOP command detected!")
                         onStopCommandDetected?.invoke()
                     }
+                    else -> { }
                 }
             }
         } else {
             val partial = rec.partialResult.lowercase()
-            if (partial.contains("partial") && partial.length > 20) {
+            if (partial.length > 20) {
                 withContext(Dispatchers.Main) {
                     onPartialResult?.invoke(partial)
                 }
@@ -142,7 +123,6 @@ class VoiceRecognizer(private val context: Context) {
         audioRecord = null
         recognizer?.close()
         recognizer = null
-        Log.d(TAG, "Voice recognition stopped")
     }
 
     fun release() {

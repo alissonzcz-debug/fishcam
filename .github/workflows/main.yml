@@ -18,14 +18,6 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: Cache Gradle
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.gradle/caches
-            ~/.gradle/wrapper
-          key: gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
-
       - name: Baixar modelo Vosk PT
         run: |
           mkdir -p app/src/main/assets/model-pt
@@ -34,18 +26,21 @@ jobs:
           cp -r vosk-tmp/vosk-model-small-pt-0.3/* app/src/main/assets/model-pt/
           rm -rf vosk-tmp vosk-model.zip
 
-      - name: Corrigir gradle.properties
+      - name: Configurar Gradle Wrapper correto
         run: |
+          wget -q https://services.gradle.org/distributions/gradle-8.2-bin.zip -O gradle-dist.zip
+          unzip -q gradle-dist.zip
+          mv gradle-8.2 gradle-home
           echo 'org.gradle.jvmargs=-Xmx2048m' > gradle.properties
           echo 'android.useAndroidX=true' >> gradle.properties
           echo 'android.enableJetifier=true' >> gradle.properties
           echo 'kotlin.code.style=official' >> gradle.properties
-          cat gradle.properties
-
-      - name: Permissão Gradle
-        run: chmod +x gradlew
+          gradle-home/bin/gradle wrapper --gradle-version 8.2
+          chmod +x gradlew
 
       - name: Build APK
+        env:
+          GRADLE_OPTS: "-Xmx2048m"
         run: ./gradlew assembleDebug --no-daemon --stacktrace
 
       - name: Upload APK

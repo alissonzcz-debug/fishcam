@@ -6,7 +6,6 @@
     android:layout_height="match_parent"
     android:background="@android:color/black">
 
-    <!-- Camera Preview (full screen) -->
     <androidx.camera.view.PreviewView
         android:id="@+id/previewView"
         android:layout_width="0dp"
@@ -17,7 +16,6 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:scaleType="fillCenter" />
 
-    <!-- Top bar overlay -->
     <LinearLayout
         android:id="@+id/topBar"
         android:layout_width="0dp"
@@ -30,7 +28,6 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent">
 
-        <!-- Recording indicator dot -->
         <View
             android:id="@+id/viewRecordingIndicator"
             android:layout_width="12dp"
@@ -47,19 +44,15 @@
             android:text="Iniciando..."
             android:textColor="@android:color/white"
             android:textSize="13sp"
-            android:textStyle="bold"
-            android:shadowColor="#80000000"
-            android:shadowDx="1"
-            android:shadowDy="1"
-            android:shadowRadius="2" />
+            android:textStyle="bold" />
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnSettings"
             style="@style/Widget.MaterialComponents.Button.TextButton"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="⚙"
-            android:textSize="20sp"
+            android:text="Config"
+            android:textSize="13sp"
             android:textColor="@android:color/white"
             android:minWidth="0dp"
             android:paddingStart="8dp"
@@ -67,7 +60,6 @@
 
     </LinearLayout>
 
-    <!-- Loading indicator -->
     <ProgressBar
         android:id="@+id/pbLoading"
         android:layout_width="wrap_content"
@@ -78,7 +70,6 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />
 
-    <!-- Voice status badge -->
     <TextView
         android:id="@+id/tvVoiceStatus"
         android:layout_width="wrap_content"
@@ -86,14 +77,13 @@
         android:layout_margin="12dp"
         android:paddingHorizontal="10dp"
         android:paddingVertical="4dp"
-        android:text="⏳ Carregando modelo de voz..."
+        android:text="Carregando modelo de voz..."
         android:textColor="@android:color/white"
         android:textSize="11sp"
         android:background="@drawable/badge_bg"
         app:layout_constraintBottom_toTopOf="@id/bottomBar"
         app:layout_constraintStart_toStartOf="parent" />
 
-    <!-- Last saved label -->
     <TextView
         android:id="@+id/tvLastSaved"
         android:layout_width="wrap_content"
@@ -108,7 +98,6 @@
         app:layout_constraintBottom_toTopOf="@id/tvVoiceStatus"
         app:layout_constraintStart_toStartOf="parent" />
 
-    <!-- Bottom bar with manual buttons -->
     <LinearLayout
         android:id="@+id/bottomBar"
         android:layout_width="0dp"
@@ -126,7 +115,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginBottom="12dp"
-            android:text="\"peixe\" → inicia  |  \"parar\" → para"
+            android:text="fale o comando para iniciar ou parar"
             android:textColor="#CCFFFFFF"
             android:textSize="12sp"
             android:textStyle="italic" />
@@ -137,28 +126,26 @@
             android:orientation="horizontal"
             android:gravity="center">
 
-            <!-- Manual START button -->
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnManualStart"
                 android:layout_width="0dp"
                 android:layout_height="56dp"
                 android:layout_weight="1"
                 android:layout_marginEnd="8dp"
-                android:text="🐟  FISGADA!"
+                android:text="FISGADA!"
                 android:textSize="14sp"
                 android:textStyle="bold"
                 app:backgroundTint="@color/teal_200"
                 android:textColor="@color/bg_dark"
                 app:cornerRadius="28dp" />
 
-            <!-- Manual STOP button -->
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnManualStop"
                 android:layout_width="0dp"
                 android:layout_height="56dp"
                 android:layout_weight="1"
                 android:layout_marginStart="8dp"
-                android:text="⏹  PARAR"
+                android:text="PARAR"
                 android:textSize="14sp"
                 android:textStyle="bold"
                 android:enabled="false"

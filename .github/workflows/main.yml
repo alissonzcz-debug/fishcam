@@ -25,8 +25,8 @@ jobs:
           unzip -q vosk-model.zip -d vosk-tmp
           cp -r vosk-tmp/vosk-model-small-pt-0.3/. app/src/main/assets/model-pt/
           rm -rf vosk-tmp vosk-model.zip
-          echo "=== Conteudo do modelo ==="
-          ls -la app/src/main/assets/model-pt/
+          echo "=== Arquivos do modelo ==="
+          find app/src/main/assets/model-pt/ -type f
 
       - name: Corrigir gradle.properties
         run: |
@@ -45,8 +45,10 @@ jobs:
           GRADLE_OPTS: "-Xmx2048m"
         run: ./gradlew assembleDebug --no-daemon
 
-      - name: Verificar APK gerado
-        run: ls -lh app/build/outputs/apk/debug/
+      - name: Verificar modelo dentro do APK
+        run: |
+          echo "=== Verificando se modelo esta no APK ==="
+          unzip -l app/build/outputs/apk/debug/app-debug.apk | grep model
 
       - name: Upload APK
         uses: actions/upload-artifact@v4

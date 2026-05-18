@@ -23,25 +23,30 @@ jobs:
           mkdir -p app/src/main/assets/model-pt
           wget -q https://alphacephei.com/vosk/models/vosk-model-small-pt-0.3.zip -O vosk-model.zip
           unzip -q vosk-model.zip -d vosk-tmp
-          cp -r vosk-tmp/vosk-model-small-pt-0.3/* app/src/main/assets/model-pt/
+          cp -r vosk-tmp/vosk-model-small-pt-0.3/. app/src/main/assets/model-pt/
           rm -rf vosk-tmp vosk-model.zip
+          echo "=== Conteudo do modelo ==="
+          ls -la app/src/main/assets/model-pt/
 
-      - name: Configurar Gradle Wrapper correto
+      - name: Corrigir gradle.properties
+        run: |
+          printf 'org.gradle.jvmargs=-Xmx2048m\nandroid.useAndroidX=true\nandroid.enableJetifier=true\nkotlin.code.style=official\n' > gradle.properties
+
+      - name: Configurar Gradle Wrapper
         run: |
           wget -q https://services.gradle.org/distributions/gradle-8.2-bin.zip -O gradle-dist.zip
           unzip -q gradle-dist.zip
           mv gradle-8.2 gradle-home
-          echo 'org.gradle.jvmargs=-Xmx2048m' > gradle.properties
-          echo 'android.useAndroidX=true' >> gradle.properties
-          echo 'android.enableJetifier=true' >> gradle.properties
-          echo 'kotlin.code.style=official' >> gradle.properties
           gradle-home/bin/gradle wrapper --gradle-version 8.2
           chmod +x gradlew
 
       - name: Build APK
         env:
           GRADLE_OPTS: "-Xmx2048m"
-        run: ./gradlew assembleDebug --no-daemon --stacktrace
+        run: ./gradlew assembleDebug --no-daemon
+
+      - name: Verificar APK gerado
+        run: ls -lh app/build/outputs/apk/debug/
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
@@ -49,4 +54,3 @@ jobs:
           name: FishCam-debug
           path: app/build/outputs/apk/debug/app-debug.apk
           retention-days: 30
-          

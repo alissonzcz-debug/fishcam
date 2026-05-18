@@ -1,0 +1,5 @@
+Este arquivo (gradle-wrapper.jar) é binário e precisa ser gerado pelo Android Studio
+ou baixado em: https://github.com/gradle/gradle/blob/master/gradle/wrapper/gradle-wrapper.jar
+
+Ao abrir o projeto no Android Studio, ele baixa automaticamente.
+O GitHub Actions também não precisa deste arquivo — ele usa o Gradle instalado no runner.

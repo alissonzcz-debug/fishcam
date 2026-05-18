@@ -1,0 +1,154 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/bg_dark">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="24dp">
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="🎤  COMANDOS DE VOZ"
+            android:textSize="11sp"
+            android:textColor="@color/teal_200"
+            android:letterSpacing="0.1"
+            android:textStyle="bold" />
+
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/tilStartCommand"
+            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:hint="Comando para INICIAR"
+            app:boxStrokeColor="@color/teal_200"
+            app:hintTextColor="@color/teal_200">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/etStartCommand"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textColor="@color/text_primary"
+                android:inputType="text"
+                android:maxLines="1" />
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/tilStopCommand"
+            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:hint="Comando para PARAR"
+            app:boxStrokeColor="@color/teal_200"
+            app:hintTextColor="@color/teal_200">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/etStopCommand"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textColor="@color/text_primary"
+                android:inputType="text"
+                android:maxLines="1" />
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="24dp"
+            android:text="📷  CÂMERA"
+            android:textSize="11sp"
+            android:textColor="@color/teal_200"
+            android:letterSpacing="0.1"
+            android:textStyle="bold" />
+
+        <RadioGroup
+            android:id="@+id/rgCamera"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:orientation="horizontal">
+
+            <RadioButton
+                android:id="@+id/rbBack"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="📷  Traseira"
+                android:textColor="@color/text_primary"
+                android:buttonTint="@color/teal_200"
+                android:checked="true" />
+
+            <RadioButton
+                android:id="@+id/rbFront"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="🤳  Frontal"
+                android:textColor="@color/text_primary"
+                android:buttonTint="@color/teal_200" />
+
+        </RadioGroup>
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="24dp"
+            android:text="⏱  BUFFER (segundos antes da fisgada)"
+            android:textSize="11sp"
+            android:textColor="@color/teal_200"
+            android:letterSpacing="0.1"
+            android:textStyle="bold" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginTop="8dp">
+
+            <com.google.android.material.slider.Slider
+                android:id="@+id/sliderBuffer"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:valueFrom="10"
+                android:valueTo="30"
+                android:stepSize="5"
+                android:value="15"
+                app:thumbColor="@color/teal_200"
+                app:trackColorActive="@color/teal_200"
+                app:trackColorInactive="@color/divider" />
+
+            <TextView
+                android:id="@+id/tvBufferValue"
+                android:layout_width="48dp"
+                android:layout_height="wrap_content"
+                android:text="15s"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:textColor="@color/teal_200"
+                android:gravity="center" />
+
+        </LinearLayout>
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnSave"
+            android:layout_width="match_parent"
+            android:layout_height="56dp"
+            android:layout_marginTop="32dp"
+            android:text="SALVAR CONFIGURAÇÕES"
+            android:textSize="15sp"
+            android:textStyle="bold"
+            app:backgroundTint="@color/teal_200"
+            android:textColor="@color/bg_dark" />
+
+    </LinearLayout>
+</ScrollView>

@@ -1,0 +1,212 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/bg_dark"
+    android:fillViewport="true">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="24dp"
+        android:gravity="center_horizontal">
+
+        <!-- Logo / Header -->
+        <ImageView
+            android:layout_width="80dp"
+            android:layout_height="80dp"
+            android:layout_marginTop="24dp"
+            android:src="@drawable/ic_fish"
+            android:contentDescription="FishCam" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:text="FishCam"
+            android:textSize="32sp"
+            android:textStyle="bold"
+            android:textColor="@color/teal_200"
+            android:fontFamily="sans-serif-condensed" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:text="Nunca perca uma fisgada"
+            android:textSize="14sp"
+            android:textColor="@color/text_secondary" />
+
+        <!-- Divider -->
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:layout_marginTop="28dp"
+            android:layout_marginBottom="8dp"
+            android:background="@color/divider" />
+
+        <!-- Section: Voice Commands -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:text="🎤  COMANDOS DE VOZ"
+            android:textSize="11sp"
+            android:textColor="@color/teal_200"
+            android:letterSpacing="0.1"
+            android:textStyle="bold" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:layout_marginBottom="12dp"
+            android:text="Fale estas palavras para controlar a gravação"
+            android:textSize="12sp"
+            android:textColor="@color/text_secondary" />
+
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/tilStartCommand"
+            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:hint="Comando para INICIAR (ex: peixe, fisgada)"
+            app:boxStrokeColor="@color/teal_200"
+            app:hintTextColor="@color/teal_200">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/etStartCommand"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textColor="@color/text_primary"
+                android:inputType="text"
+                android:maxLines="1" />
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/tilStopCommand"
+            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:hint="Comando para PARAR (ex: parar, salvar)"
+            app:boxStrokeColor="@color/teal_200"
+            app:hintTextColor="@color/teal_200">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/etStopCommand"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textColor="@color/text_primary"
+                android:inputType="text"
+                android:maxLines="1" />
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <!-- Section: Camera -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="24dp"
+            android:text="📷  CÂMERA"
+            android:textSize="11sp"
+            android:textColor="@color/teal_200"
+            android:letterSpacing="0.1"
+            android:textStyle="bold" />
+
+        <RadioGroup
+            android:id="@+id/rgCamera"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:orientation="horizontal">
+
+            <RadioButton
+                android:id="@+id/rbBack"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="📷  Traseira"
+                android:textColor="@color/text_primary"
+                android:buttonTint="@color/teal_200"
+                android:checked="true" />
+
+            <RadioButton
+                android:id="@+id/rbFront"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="🤳  Frontal"
+                android:textColor="@color/text_primary"
+                android:buttonTint="@color/teal_200" />
+
+        </RadioGroup>
+
+        <!-- Section: Buffer -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="24dp"
+            android:text="⏱  BUFFER (segundos antes da fisgada)"
+            android:textSize="11sp"
+            android:textColor="@color/teal_200"
+            android:letterSpacing="0.1"
+            android:textStyle="bold" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginTop="8dp">
+
+            <com.google.android.material.slider.Slider
+                android:id="@+id/sliderBuffer"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:valueFrom="10"
+                android:valueTo="30"
+                android:stepSize="5"
+                android:value="15"
+                app:thumbColor="@color/teal_200"
+                app:trackColorActive="@color/teal_200"
+                app:trackColorInactive="@color/divider" />
+
+            <TextView
+                android:id="@+id/tvBufferValue"
+                android:layout_width="48dp"
+                android:layout_height="wrap_content"
+                android:text="15s"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:textColor="@color/teal_200"
+                android:gravity="center" />
+
+        </LinearLayout>
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:text="O app vai guardar este tempo antes do seu comando de voz"
+            android:textSize="12sp"
+            android:textColor="@color/text_secondary" />
+
+        <!-- Start Button -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnStart"
+            android:layout_width="match_parent"
+            android:layout_height="56dp"
+            android:layout_marginTop="32dp"
+            android:layout_marginBottom="24dp"
+            android:text="COMEÇAR A PESCAR 🎣"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            app:backgroundTint="@color/teal_200"
+            android:textColor="@color/bg_dark" />
+
+    </LinearLayout>
+</ScrollView>

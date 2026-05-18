@@ -1,0 +1,3 @@
+-keep class org.vosk.** { *; }
+-keep class com.alphacephei.** { *; }
+-dontwarn org.vosk.**

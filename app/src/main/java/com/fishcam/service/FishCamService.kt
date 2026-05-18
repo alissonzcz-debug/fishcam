@@ -22,17 +22,13 @@ class FishCamService : LifecycleService() {
         private const val TAG = "FishCamService"
         private const val NOTIFICATION_ID = 1001
         private const val CHANNEL_ID = "fishcam_channel"
-        private const val CHANNEL_NAME = "FishCam - Gravação Ativa"
+        private const val CHANNEL_NAME = "FishCam - Gravacao Ativa"
 
         const val ACTION_START = "com.fishcam.START"
-        const val ACTION_STOP = "com.fishcam.STOP"
-        const val ACTION_SAVE_START = "com.fishcam.SAVE_START"
-        const val ACTION_SAVE_STOP = "com.fishcam.SAVE_STOP"
+        const val ACTION_STOP  = "com.fishcam.STOP"
 
         fun start(context: Context) {
-            val intent = Intent(context, FishCamService::class.java).apply {
-                action = ACTION_START
-            }
+            val intent = Intent(context, FishCamService::class.java).apply { action = ACTION_START }
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
                 context.startForegroundService(intent)
             else
@@ -40,13 +36,10 @@ class FishCamService : LifecycleService() {
         }
 
         fun stop(context: Context) {
-            context.startService(Intent(context, FishCamService::class.java).apply {
-                action = ACTION_STOP
-            })
+            context.startService(Intent(context, FishCamService::class.java).apply { action = ACTION_STOP })
         }
     }
 
-    // Binder for Activity to get direct access
     inner class LocalBinder : Binder() {
         fun getService(): FishCamService = this@FishCamService
     }
@@ -54,37 +47,29 @@ class FishCamService : LifecycleService() {
 
     private var cameraManager: CameraManager? = null
     private var voiceRecognizer: VoiceRecognizer? = null
+    private var isSaving = false
 
-    // Callbacks to UI
     var onStatusChanged: ((String) -> Unit)? = null
     var onVideoSaved: ((File) -> Unit)? = null
     var onModelLoaded: (() -> Unit)? = null
     var onError: ((String) -> Unit)? = null
 
-    private var previewView: PreviewView? = null
-    private var isSaving = false
-
-    // ── Lifecycle ─────────────────────────────────────────────────────────────
-
     override fun onCreate() {
         super.onCreate()
         createNotificationChannel()
-        Log.d(TAG, "Service created")
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         super.onStartCommand(intent, flags, startId)
         when (intent?.action) {
             ACTION_START -> {
-                startForeground(NOTIFICATION_ID, buildNotification("Buffer ativo — aguardando fisgada 🎣"))
+                startForeground(NOTIFICATION_ID, buildNotification("Buffer ativo - aguardando fisgada"))
                 initializeVoice()
             }
             ACTION_STOP -> {
                 shutDown()
                 stopSelf()
             }
-            ACTION_SAVE_START -> triggerSaveStart()
-            ACTION_SAVE_STOP -> triggerSaveStop()
         }
         return START_STICKY
     }
@@ -94,117 +79,82 @@ class FishCamService : LifecycleService() {
         return binder
     }
 
-    // ── Camera ────────────────────────────────────────────────────────────────
-
     fun attachPreviewView(pv: PreviewView) {
-        previewView = pv
-        startCamera(pv)
-    }
-
-    private fun startCamera(pv: PreviewView) {
         cameraManager = CameraManager(this, this, pv).apply {
             onStatusChanged = { status ->
-                val msg = when (status) {
-                    CameraManager.CameraStatus.BUFFERING -> "Buffer ativo 🎣"
-                    CameraManager.CameraStatus.SAVING    -> "Gravando captura! 🐟"
-                    CameraManager.CameraStatus.IDLE      -> "Câmera pronta"
-                    CameraManager.CameraStatus.STOPPED   -> "Câmera parada"
-                }
-                updateNotification(msg)
-                this@FishCamService.onStatusChanged?.invoke(msg)
+                updateNotification(status)
+                this@FishCamService.onStatusChanged?.invoke(status)
             }
             onVideoSaved = { file ->
-                updateNotification("Vídeo salvo! ✅")
+                isSaving = false
+                updateNotification("Video salvo!")
                 this@FishCamService.onVideoSaved?.invoke(file)
             }
             onError = { err ->
+                isSaving = false
                 this@FishCamService.onError?.invoke(err)
             }
             initialize()
         }
     }
 
-    // ── Voice ─────────────────────────────────────────────────────────────────
-
     private fun initializeVoice() {
         voiceRecognizer = VoiceRecognizer(this).apply {
             onModelLoaded = {
-                Log.d(TAG, "Voice model ready, starting listener")
                 startListening()
                 this@FishCamService.onModelLoaded?.invoke()
             }
-            onModelLoadError = { err ->
-                onError?.invoke("Erro no reconhecimento de voz: $err")
-            }
-            onStartCommandDetected = {
-                Log.d(TAG, "Voice START command → triggerSaveStart")
-                triggerSaveStart()
-            }
-            onStopCommandDetected = {
-                Log.d(TAG, "Voice STOP command → triggerSaveStop")
-                triggerSaveStop()
-            }
+            onModelLoadError = { err -> onError?.invoke(err) }
+            onStartCommandDetected = { triggerSaveStart() }
+            onStopCommandDetected  = { triggerSaveStop() }
             loadModel()
         }
     }
-
-    // ── Trigger ───────────────────────────────────────────────────────────────
 
     fun triggerSaveStart() {
         if (isSaving) return
         isSaving = true
         cameraManager?.triggerSaveStart()
-        updateNotification("🐟 Fisgada detectada! Gravando...")
+        updateNotification("Fisgada detectada! Gravando...")
     }
 
     fun triggerSaveStop() {
         if (!isSaving) return
-        isSaving = false
         cameraManager?.triggerSaveStop()
-        updateNotification("Salvando vídeo...")
+        updateNotification("Salvando video...")
     }
 
     fun isCurrentlySaving() = isSaving
 
-    // ── Notifications ─────────────────────────────────────────────────────────
-
     private fun createNotificationChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val channel = NotificationChannel(
-                CHANNEL_ID,
-                CHANNEL_NAME,
-                NotificationManager.IMPORTANCE_LOW
-            ).apply {
-                description = "Mantém a câmera e microfone ativos em segundo plano"
+            val channel = NotificationChannel(CHANNEL_ID, CHANNEL_NAME,
+                NotificationManager.IMPORTANCE_LOW).apply {
                 setShowBadge(false)
             }
-            val nm = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
-            nm.createNotificationChannel(channel)
+            (getSystemService(NOTIFICATION_SERVICE) as NotificationManager)
+                .createNotificationChannel(channel)
         }
     }
 
     private fun buildNotification(text: String): Notification {
-        val pendingIntent = PendingIntent.getActivity(
-            this, 0,
+        val pi = PendingIntent.getActivity(this, 0,
             Intent(this, MainActivity::class.java),
-            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
-        )
+            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
         return NotificationCompat.Builder(this, CHANNEL_ID)
             .setContentTitle("FishCam")
             .setContentText(text)
             .setSmallIcon(R.drawable.ic_notification)
-            .setContentIntent(pendingIntent)
+            .setContentIntent(pi)
             .setOngoing(true)
             .setSilent(true)
             .build()
     }
 
     private fun updateNotification(text: String) {
-        val nm = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
-        nm.notify(NOTIFICATION_ID, buildNotification(text))
+        (getSystemService(NOTIFICATION_SERVICE) as NotificationManager)
+            .notify(NOTIFICATION_ID, buildNotification(text))
     }
-
-    // ── Shutdown ──────────────────────────────────────────────────────────────
 
     private fun shutDown() {
         voiceRecognizer?.release()
@@ -217,6 +167,5 @@ class FishCamService : LifecycleService() {
     override fun onDestroy() {
         shutDown()
         super.onDestroy()
-        Log.d(TAG, "Service destroyed")
     }
 }

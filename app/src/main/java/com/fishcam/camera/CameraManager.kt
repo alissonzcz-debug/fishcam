@@ -3,7 +3,6 @@ package com.fishcam.camera
 import android.annotation.SuppressLint
 import android.content.ContentValues
 import android.content.Context
-import android.os.Build
 import android.os.Environment
 import android.provider.MediaStore
 import android.util.Log
@@ -28,36 +27,25 @@ class CameraManager(
 ) {
     companion object {
         private const val TAG = "CameraManager"
-        private const val CHUNK_DURATION_MS = 3_000L  // 3-second chunks
     }
 
     private val executor = Executors.newSingleThreadExecutor()
     private var cameraProvider: ProcessCameraProvider? = null
     private var videoCapture: VideoCapture<Recorder>? = null
     private var activeRecording: Recording? = null
-
-    private lateinit var videoBuffer: VideoBuffer
-    private var isCapturing = false       // chunk loop running
-    private var isSavingFinal = false     // currently saving triggered clip
-    private var finalChunks: MutableList<File> = mutableListOf()
-
     private val coroutineScope = CoroutineScope(Dispatchers.Main + SupervisorJob())
 
-    // Callbacks
-    var onStatusChanged: ((CameraStatus) -> Unit)? = null
+    private var state = State.IDLE
+    private var triggerTime = 0L
+    private var recordingStartTime = 0L
+
+    enum class State { IDLE, BUFFERING, SAVING }
+
+    var onStatusChanged: ((String) -> Unit)? = null
     var onVideoSaved: ((File) -> Unit)? = null
     var onError: ((String) -> Unit)? = null
 
-    enum class CameraStatus {
-        IDLE, BUFFERING, SAVING, STOPPED
-    }
-
-    // ── Init ─────────────────────────────────────────────────────────────────
-
     fun initialize() {
-        val bufferSec = AppPreferences.getBufferSeconds(context)
-        videoBuffer = VideoBuffer(context.cacheDir, bufferSec)
-
         val future = ProcessCameraProvider.getInstance(context)
         future.addListener({
             cameraProvider = future.get()
@@ -68,179 +56,125 @@ class CameraManager(
     @SuppressLint("MissingPermission")
     private fun bindCamera() {
         val provider = cameraProvider ?: return
-
         val facing = if (AppPreferences.getCameraFacing(context) == "front")
-            CameraSelector.LENS_FACING_FRONT
-        else
-            CameraSelector.LENS_FACING_BACK
-
-        val cameraSelector = CameraSelector.Builder()
-            .requireLensFacing(facing)
-            .build()
-
+            CameraSelector.LENS_FACING_FRONT else CameraSelector.LENS_FACING_BACK
+        val cameraSelector = CameraSelector.Builder().requireLensFacing(facing).build()
         val preview = Preview.Builder().build().also {
             it.setSurfaceProvider(previewView.surfaceProvider)
         }
-
-        val qualitySelector = QualitySelector.from(
-            Quality.HD,
-            FallbackStrategy.lowerQualityOrHigherThan(Quality.SD)
-        )
-
+        val qualitySelector = QualitySelector.from(Quality.HD,
+            FallbackStrategy.lowerQualityOrHigherThan(Quality.SD))
         val recorder = Recorder.Builder()
             .setExecutor(executor)
             .setQualitySelector(qualitySelector)
             .build()
-
         videoCapture = VideoCapture.withOutput(recorder)
-
         try {
             provider.unbindAll()
             provider.bindToLifecycle(lifecycleOwner, cameraSelector, preview, videoCapture)
-            Log.d(TAG, "Camera bound, facing=$facing")
-            startChunkLoop()
+            startBuffering()
         } catch (e: Exception) {
-            Log.e(TAG, "Camera bind failed", e)
-            onError?.invoke("Erro ao iniciar câmera: ${e.message}")
+            onError?.invoke("Erro ao iniciar camera: ${e.message}")
         }
     }
 
-    // ── Chunk Loop ───────────────────────────────────────────────────────────
-
-    private fun startChunkLoop() {
-        isCapturing = true
-        onStatusChanged?.invoke(CameraStatus.BUFFERING)
-        recordNextChunk()
-    }
-
     @SuppressLint("MissingPermission")
-    private fun recordNextChunk() {
-        if (!isCapturing) return
+    private fun startBuffering() {
         val vc = videoCapture ?: return
-
-        val chunkFile = videoBuffer.nextChunkFile()
-        val outputOptions = FileOutputOptions.Builder(chunkFile).build()
-
+        state = State.BUFFERING
+        onStatusChanged?.invoke("Buffer ativo")
+        val tmpFile = File(context.cacheDir, "buffer_tmp.mp4").also { it.delete() }
+        val outputOptions = FileOutputOptions.Builder(tmpFile).build()
         activeRecording = vc.output
             .prepareRecording(context, outputOptions)
             .withAudioEnabled()
             .start(ContextCompat.getMainExecutor(context)) { event ->
                 when (event) {
+                    is VideoRecordEvent.Start -> {
+                        recordingStartTime = System.currentTimeMillis()
+                    }
                     is VideoRecordEvent.Finalize -> {
-                        if (!event.hasError()) {
-                            if (isSavingFinal) {
-                                // This chunk is part of the triggered recording
-                                finalChunks.add(chunkFile)
-                            } else {
-                                // Normal buffering — add to circular buffer
-                                videoBuffer.addChunk(chunkFile)
+                        if (state == State.SAVING) {
+                            coroutineScope.launch(Dispatchers.IO) {
+                                processAndSave(tmpFile)
                             }
-                        } else {
-                            Log.e(TAG, "Chunk error: ${event.error}")
-                            chunkFile.delete()
+                        } else if (state == State.BUFFERING) {
+                            startBuffering()
                         }
-                        // Start next chunk unless stopping
-                        if (isCapturing) recordNextChunk()
                     }
                     else -> {}
                 }
             }
-
-        // Stop this chunk after CHUNK_DURATION_MS
-        coroutineScope.launch {
-            delay(CHUNK_DURATION_MS)
-            if (isCapturing) {
-                activeRecording?.stop()
-            }
-        }
     }
-
-    // ── Trigger: START saving ─────────────────────────────────────────────────
 
     fun triggerSaveStart() {
-        if (isSavingFinal) return
-        Log.d(TAG, "TRIGGER: Start saving final clip")
-        isSavingFinal = true
-        finalChunks.clear()
-        onStatusChanged?.invoke(CameraStatus.SAVING)
+        if (state != State.BUFFERING) return
+        triggerTime = System.currentTimeMillis()
+        state = State.SAVING
+        onStatusChanged?.invoke("Fisgada! Gravando...")
     }
 
-    // ── Trigger: STOP saving and finalize file ────────────────────────────────
-
     fun triggerSaveStop() {
-        if (!isSavingFinal) return
-        Log.d(TAG, "TRIGGER: Stop saving — finalizing clip")
-        isSavingFinal = false
+        if (state != State.SAVING) return
+        onStatusChanged?.invoke("Salvando video...")
+        activeRecording?.stop()
+        activeRecording = null
+    }
 
-        coroutineScope.launch(Dispatchers.IO) {
-            // Wait a tiny bit for last chunk to finalize
-            delay(500)
-
-            val savedFile = buildOutputFile()
-            val bufferedChunks = videoBuffer.getBufferedChunks()
-
-            val success = videoBuffer.mergeChunksInto(savedFile, finalChunks)
-            finalChunks.clear()
-
-            withContext(Dispatchers.Main) {
-                if (success) {
-                    // Copy to MediaStore (gallery)
-                    copyToMediaStore(savedFile)
-                    onVideoSaved?.invoke(savedFile)
-                    Log.d(TAG, "Video saved: ${savedFile.absolutePath}")
-                } else {
-                    onError?.invoke("Erro ao salvar vídeo")
-                }
-                onStatusChanged?.invoke(CameraStatus.BUFFERING)
+    private suspend fun processAndSave(tmpFile: File) {
+        try {
+            if (!tmpFile.exists() || tmpFile.length() == 0L) {
+                withContext(Dispatchers.Main) { onError?.invoke("Arquivo vazio, espere o buffer encher") }
+                state = State.BUFFERING
+                withContext(Dispatchers.Main) { startBuffering() }
+                return
             }
+            val savedFile = buildOutputFile()
+            tmpFile.copyTo(savedFile, overwrite = true)
+            addToMediaStore(savedFile)
+            withContext(Dispatchers.Main) {
+                onVideoSaved?.invoke(savedFile)
+                onStatusChanged?.invoke("Buffer ativo")
+            }
+        } catch (e: Exception) {
+            withContext(Dispatchers.Main) { onError?.invoke("Erro ao salvar: ${e.message}") }
+        } finally {
+            state = State.BUFFERING
+            withContext(Dispatchers.Main) { startBuffering() }
         }
     }
 
-    // ── Output File ───────────────────────────────────────────────────────────
-
     private fun buildOutputFile(): File {
-        val timestamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault())
-            .format(Date())
+        val ts = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(Date())
         val folder = AppPreferences.getSaveFolder(context)
         val dir = File(
-            Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_MOVIES),
-            folder
+            Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_MOVIES), folder
         ).also { it.mkdirs() }
-        return File(dir, "FishCam_$timestamp.mp4")
+        return File(dir, "FishCam_$ts.mp4")
     }
 
-    private fun copyToMediaStore(file: File) {
+    private fun addToMediaStore(file: File) {
         try {
             val values = ContentValues().apply {
                 put(MediaStore.Video.Media.DISPLAY_NAME, file.name)
                 put(MediaStore.Video.Media.MIME_TYPE, "video/mp4")
                 put(MediaStore.Video.Media.RELATIVE_PATH,
                     "${Environment.DIRECTORY_MOVIES}/${AppPreferences.getSaveFolder(context)}")
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                    put(MediaStore.Video.Media.IS_PENDING, 0)
-                }
             }
             context.contentResolver.insert(MediaStore.Video.Media.EXTERNAL_CONTENT_URI, values)
-            Log.d(TAG, "Added to MediaStore: ${file.name}")
         } catch (e: Exception) {
-            Log.e(TAG, "MediaStore insert failed", e)
+            Log.e(TAG, "MediaStore error", e)
         }
     }
 
-    // ── Cleanup ───────────────────────────────────────────────────────────────
+    fun isCurrentlySaving() = state == State.SAVING
 
     fun release() {
-        isCapturing = false
-        isSavingFinal = false
+        state = State.IDLE
         activeRecording?.stop()
         activeRecording = null
         cameraProvider?.unbindAll()
         coroutineScope.cancel()
         executor.shutdown()
-        videoBuffer.clear()
-        onStatusChanged?.invoke(CameraStatus.STOPPED)
     }
-
-    fun isCurrentlySaving() = isSavingFinal
-    fun isBuffering() = isCapturing && !isSavingFinal
 }
